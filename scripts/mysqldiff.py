@@ -196,6 +196,11 @@ if __name__ == '__main__':
                       help="skip check of all table options (e.g., "
                            "AUTO_INCREMENT, ENGINE, CHARSET, etc.).")
 
+    parser.add_option("--skip-opt-autoinc", action="store_true", default=False,
+                      dest="skip_opt_autoinc",
+                      help="skip table option AUTO_INCREMENT only")
+
+
     # Add verbosity and quiet (silent) mode
     add_verbosity(parser, True)
 
@@ -227,6 +232,7 @@ if __name__ == '__main__':
         "changes-for": opt.changes_for,
         "reverse": opt.reverse,
         "skip_table_opts": opt.skip_tbl_opts,
+        "skip_opt_autoinc": opt.skip_opt_autoinc,
         "compact": opt.compact,
         "charset": opt.charset,
     }

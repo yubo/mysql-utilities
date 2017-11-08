@@ -364,6 +364,7 @@ class SQLTransformer(object):
         if options is None:
             options = {}
         self.skip_table_opts = options.get("skip_table_opts", False)
+        self.skip_opt_autoinc = options.get("skip_opt_autoinc", False)
 
     def transform_definition(self):
         """Transform an object definition
@@ -590,6 +591,10 @@ class SQLTransformer(object):
         # Check for rename
         if destination[_TABLE_NAME] != source[_TABLE_NAME]:
             statement_parts[0]['val'] = (source[_DB_NAME], source[_TABLE_NAME])
+
+        # Check skip_opt_autoinc (discard auto_increment or not)
+        if self.skip_opt_autoinc:
+            statement_parts[2]['val'] = ''
 
         # check and set commas
         do_comma = False
@@ -1179,7 +1184,7 @@ class SQLTransformer(object):
         else:
             gen_defn = None
 
-        if gen_defn is not None:
+        if gen_defn:
             statements.append(gen_defn)
 
         # Form the SQL command.

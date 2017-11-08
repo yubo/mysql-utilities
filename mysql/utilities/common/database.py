@@ -259,6 +259,7 @@ class Database(object):
         self.exclude_patterns = options.get("exclude_patterns", None)
         self.use_regexp = options.get("use_regexp", False)
         self.skip_table_opts = options.get("skip_table_opts", False)
+        self.skip_opt_autoinc = options.get("skip_opt_autoinc", False)
         self.new_db = None
         self.q_new_db = None
         self.init_called = False
@@ -1113,6 +1114,21 @@ class Database(object):
             # Reconstruct CREATE statement without table options.
             create_statement = "{0}{1}{2}".format(create_tbl, sep, part_opts)
 
+        elif self.skip_opt_autoinc and obj_type == _TABLE:
+            # First, get partition options.
+            create_tbl, sep, part_opts = create_statement.rpartition('\n/*')
+            # Handle situation where no partition options are found.
+            if not create_tbl:
+                create_tbl = part_opts
+                part_opts = ''
+            else:
+                part_opts = "{0}{1}".format(sep, part_opts)
+            # Then, separate table definitions from table options.
+            create_tbl, sep, _ = create_tbl.rpartition(') ')
+            tbl_opts = re.sub(r'AUTO_INCREMENT=[0-9]*', '', _)  # only remove AUTO_INCREMENT values
+            # Reconstruct CREATE statement without table options.
+            create_statement = "{0}{1}{2}{3}".format(create_tbl, sep, part_opts, tbl_opts)
+
         return create_statement
 
     def get_create_table(self, db, table):
@@ -1162,6 +1178,20 @@ class Database(object):
             create_tbl, sep, tbl_opts = create_tbl.rpartition(') ')
             # Reconstruct CREATE TABLE without table options.
             create_tbl = "{0}{1}{2}".format(create_tbl, sep, part_opts)
+        elif self.skip_opt_autoinc and obj_type == _TABLE:
+            # First, get partition options.
+            create_tbl, sep, part_opts = create_statement.rpartition('\n/*')
+            # Handle situation where no partition options are found.
+            if not create_tbl:
+                create_tbl = part_opts
+                part_opts = ''
+            else:
+                part_opts = "{0}{1}".format(sep, part_opts)
+            # Then, separate table definitions from table options.
+            create_tbl, sep, _ = create_tbl.rpartition(') ')
+            tbl_opts = re.sub(r'AUTO_INCREMENT=[0-9]*', _)  # only remove AUTO_INCREMENT values
+            # Reconstruct CREATE statement without table options.
+            create_statement = "{0}{1}{2}{3}".format(create_tbl, sep, part_opts, tbl_opts)
 
         return create_tbl, tbl_opts
 
