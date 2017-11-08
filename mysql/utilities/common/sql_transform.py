@@ -919,6 +919,7 @@ class SQLTransformer(object):
         TABLE commands for defining the indexes for the table.
 
         rows[in]           result set of index definitions
+                           rows must have ordered by index seq_no
 
         Returns list - list of SQL index clause statements or
                        [] if no indexes
@@ -997,6 +998,7 @@ class SQLTransformer(object):
         """
         from mysql.utilities.common.table import Table
         from mysql.utilities.common.dbcompare import get_common_lists
+        from collections import defaultdict
 
         # Get the Table instances
         self.dest_tbl = Table(self.destination_db.source, "%s.%s" %
@@ -1014,8 +1016,32 @@ class SQLTransformer(object):
         src_idx = [('',) + tuple(idx[1:])
                    for idx in self.src_tbl.get_tbl_indexes()]
 
+        # get add or drop index by comparing idx_name, not index field columns
+        dest_idx_dict = defaultdict(list)
+        src_idx_dict = defaultdict(list)
+        for idx_f in dest_idx:  # idx_f: index fields
+            dest_idx_dict[idx_f[2]].append(idx_f)
+        for idx_f in src_idx:
+            src_idx_dict[idx_f[2]].append(idx_f)
+
+        same_idx_name, drop_idx_name, add_idx_name = get_common_lists(dest_idx_dict.keys(), src_idx_dict.keys())
+
         # Now we determine the indexes we need to add and those to drop
-        _, drop_idx, add_idx = get_common_lists(dest_idx, src_idx)
+        # two table have the same index_name but different fields, drop and add new one.
+        if len(same_idx_name) > 0:
+            for idx_name in same_idx_name:
+                if dest_idx_dict[idx_name] != src_idx_dict[idx_name]:
+                    drop_idx_name.append(idx_name)
+                    add_idx_name.append(idx_name)
+
+        add_idx = []
+        drop_idx = []
+        for d in add_idx_name:
+            add_idx.extend(src_idx_dict[d])
+
+        for d in drop_idx_name:
+            drop_idx.extend(dest_idx_dict[d])
+
         if not drop_idx and not add_idx:
             return ([], [])
 
