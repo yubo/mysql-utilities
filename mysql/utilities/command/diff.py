@@ -62,27 +62,24 @@ def object_diff(server1_val, server2_val, object1, object2, options,
     # compare db's all objects
     include_create = options.get("include_create", False)
     # db1.*:db2.*
-    if object1.endswith('.*') and object2.endswith('.*'):
+    if include_create and object1.endswith('.*') and object2.endswith('.*'):
         direction = options.get("changes-for", None)
         reverse = options.get("reverse", False)
-        # @TODO: here assume sql_mode is the same between server1 and server2
-        sql_mode = server1.select_variable("SQL_MODE")
-        db_name1, _ = parse_object_name(object1, sql_mode)
-        db_name2, _ = parse_object_name(object2, sql_mode)
+
+        db_name1, _ = parse_object_name(object1, server1.select_variable("SQL_MODE"))
+        db_name2, _ = parse_object_name(object2, server2.select_variable("SQL_MODE"))
         in_both, in_db1, in_db2 = get_common_objects(server1, server2, 
                                                     db_name1, db_name2, True, options)
         # create/alter/drop need all objects compare
         all_object = set(in_both + in_db1 + in_db2)
-        if direction == 'server1' or direction is None or reverse:
-            print("\nUSE {0};\n".format(db_name1))
-        else:
-            print("\nUSE {0};\n".format(db_name2))
+
         # call myself recusively to compare all objects 
         for this_obj in all_object:
             object1 = db_name1 + "." + this_obj[1][0]
             object2 = db_name2 + "." + this_obj[1][0]
             # share the same connection in this loop. object_type=None
             object_diff(server1, server2, object1, object2, options, object_type=None)
+        return []
 
     # Get the object type if unknown considering that objects of different
     # types can be found with the same name.
