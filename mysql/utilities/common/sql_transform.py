@@ -635,7 +635,7 @@ class SQLTransformer(object):
                 def_val = to_sql(def_val)
             values['default'] = " DEFAULT %s" % def_val
         if len(col_data[_COLUMN_EXTRA]) > 0:
-            if col_data[_COLUMN_EXTRA].upper() != "AUTO_INCREMENT":
+            if col_data[_COLUMN_EXTRA].upper() == "AUTO_INCREMENT":
                 values['extra'] = " %s" % col_data[_COLUMN_EXTRA]
         if len(col_data[_COLUMN_COMMENT]) > 0:
             values['comment'] = " COMMENT '%s'" % col_data[_COLUMN_COMMENT]
