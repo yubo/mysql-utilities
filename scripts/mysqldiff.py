@@ -200,6 +200,17 @@ if __name__ == '__main__':
                       dest="skip_opt_autoinc",
                       help="skip table option AUTO_INCREMENT only")
 
+    # create table/view/proc/func/event/trig if not exists. (skip database/grants )
+    parser.add_option("--include-create", action="store_true",
+                      dest="include_create",
+                      help="create objects(like TABLE.) if not exists in target db(changes-for) "
+                           "only work in when difftype is sql .")
+
+    # drop table/view/proc/func/event/trig if they ONLY exist in source db
+    parser.add_option("--include-drop", action="store_true", default=False,
+                      dest="include_drop",
+                      help="drop objects(like TABLE.) if only exists in source db "
+                           "only work in when difftype is sql .")
 
     # Add verbosity and quiet (silent) mode
     add_verbosity(parser, True)
@@ -233,12 +244,18 @@ if __name__ == '__main__':
         "reverse": opt.reverse,
         "skip_table_opts": opt.skip_tbl_opts,
         "skip_opt_autoinc": opt.skip_opt_autoinc,
+        "include_create": opt.include_create,
+        "include_drop": opt.include_drop,
         "compact": opt.compact,
         "charset": opt.charset,
     }
 
     # add ssl options values.
     options.update(get_ssl_dict(opt))
+
+    # check include_create/drop only for difftype=sql
+    if (opt.include_create or opt.include_drop) and opt.difftype != 'sql':
+        parser.error("--include-create or --include-drop only is allowed only when --difftype=sql ")
 
     # Parse server connection values
     try:
